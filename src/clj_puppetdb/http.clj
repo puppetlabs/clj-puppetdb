@@ -60,42 +60,14 @@
         File.
         fs/file?)))
 
-(defn- make-https-client
-  [http-async-client ^String host {:keys [ssl-context] :as opts}]
-  {:pre [(.startsWith host "https://")
-         (map? opts)
-         (or (and ssl-context (or (instance? SSLContext ssl-context)
-                                  (throw (IllegalArgumentException.
-                                           (str "The ssl-context is expected to be an instance of "
-                                                (-> SSLContext .getName)
-                                                " but is of class "
-                                                (-> ssl-context .getClass .getName))))))
-             (every? #(or (->> % (get opts) file?)
-                          (throw (IllegalArgumentException.
-                                   (str "The following file does not exist: " (name %) \= (get opts %)))))
-                     cert-keys))]}
-  (let [opts (if ssl-context
-               opts
-               (assoc opts :ssl-context (apply ssl/pems->ssl-context (map #(->> % ^String (get opts) File. fs/file) cert-keys))))
-        opts (apply dissoc opts cert-keys)]
-    (make-client-common http-async-client host opts)))
-
-(defn- make-http-client
-  [http-async-client ^String host opts]
-  {:pre [(.startsWith host "http://")
-         (map? opts)]}
-  (let [opts (apply dissoc opts :ssl-context cert-keys)]
-    (make-client-common http-async-client host opts)))
-
 (defn make-client
   [http-async-client ^String host opts]
-  {:post [(satisfies? PdbClient %)]}
+  {:pre [(or (.startsWith host "https://")
+             (.startsWith host "http://"))]
+   :post [(satisfies? PdbClient %)]}
   (let [vcr-dir (:vcr-dir opts)
         opts (dissoc opts :vcr-dir)
-        client (cond
-                 (.startsWith host "http://") (make-http-client http-async-client host opts)
-                 (.startsWith host "https://") (make-https-client http-async-client host opts)
-                 :else (throw (IllegalArgumentException. "Host must start either http:// or https://")))]
+        client (make-client-common http-async-client host opts)]
     (if vcr-dir
       (make-vcr-client vcr-dir client)
       client)))
