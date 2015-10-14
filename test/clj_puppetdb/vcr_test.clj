@@ -23,10 +23,11 @@
 
 (deftest vcr-test
   (testing "VCR recording and replay"
-    (let [vcr-dir "vcr-test"]
+    (let [vcr-dir "vcr-test"
+          http-client (async/create-client {})]
       (fs/delete-dir vcr-dir)
       (testing "when VCR is enabled"
-        (let [conn (connect "http://localhost:8080" {:vcr-dir vcr-dir})]
+        (let [conn (connect http-client "http://localhost:8080" {:vcr-dir vcr-dir})]
           (is (= vcr-dir (:vcr-dir (client-info conn))))
           (testing "and no recording exists"
             (with-redefs [async/request-with-client
@@ -93,7 +94,7 @@
                                                             [:= :certname "test"]
                                                             (array-map :order-by [(array-map :order "desc" :field :receive-time)] :limit 1)))))))
         (testing "when VCR is not enabled but a recording exists"
-          (let [conn (connect "http://localhost:8080")]
+          (let [conn (connect http-client "http://localhost:8080")]
             (is (not (contains? (client-info conn) :vcr-dir)))
             (with-redefs [async/request-with-client
                           (fn [_ _ _] (future

@@ -1,9 +1,12 @@
 (ns clj-puppetdb.core
   (:require [clj-puppetdb.http :refer [GET] :as http]
             [clj-puppetdb.paging :as paging]
-            [clj-puppetdb.query :as q]))
+            [clj-puppetdb.query :as q]
+            [schema.core :as s]
+            [puppetlabs.http.client.common :as http-common])
+  (:import (clj_puppetdb.http_core PdbClient)))
 
-(defn connect
+(s/defn connect :- PdbClient
   "Return a PuppetDB client map for the given host.
 
   If the host begins with 'https://', you must supply also supply a map containing
@@ -13,8 +16,13 @@
 
   Either way, you must specify the port as part of the host URL (usually ':8080' for
   http or ':8081' for https)."
-  ([^String host] (connect host {}))
-  ([^String host opts] (http/make-client host opts)))
+  ([http-async-client :- (s/protocol http-common/HTTPClient)
+    host :- s/Str]
+   (connect http-async-client host {}))
+  ([http-async-client :- (s/protocol http-common/HTTPClient)
+    host :- s/Str
+    opts]
+   (http/make-client http-async-client host opts)))
 
 (defn- query-pdb
   [client path query-vec params]
