@@ -1,7 +1,7 @@
 (ns clj-puppetdb.http-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clj-puppetdb.http :refer [GET make-client]]
+            [clj-puppetdb.http :refer [GET make-client catching-exceptions assoc-kind]]
             [clj-puppetdb.http-core :refer :all]
             [cheshire.core :as json]
             [puppetlabs.http.client.async :as http])
@@ -71,4 +71,42 @@
                 (is (= (:params info) params))
                 (is (= (:endpoint info) path))
                 (is (= (:host info) host))
-                (is (= (:msg info) response-data-encoded)))))))))
+                (is (= (:msg info) response-data-encoded)))))))
+
+    (testing "Should throw proper exception on an error response"
+      (with-redefs [http/request-with-client (fn [_ _ _] (future ((constantly {:error "an exception"}))))]
+        (try
+          (GET client path params)
+          (catch ExceptionInfo ei
+            (let [info (.getData ei)]
+              (is (= (:kind info):puppetdb-connection-error))
+              (is (= (:exception info) "an exception")))))))))
+
+(deftest catching-exceptions-test
+  (testing "Should pass"
+    (is (= (catching-exceptions ((constantly {:body "foobar"})) (assoc-kind {} :something-bad-happened)) {:body "foobar"})))
+
+  (testing "Should rethrow proper exception on an exception"
+    (try
+      (catching-exceptions (#(throw (NullPointerException.))) (assoc-kind {} :something-bad-happened))
+      (is (not "Should never get to this place!!"))
+      (catch ExceptionInfo ei
+        (let [info (.getData ei)]
+          (is (= (:kind info) :something-bad-happened))
+          (is (instance? NullPointerException (:exception info)))))))
+
+  (testing "Should rethrow proper exception on an exception that is listed"
+    (try
+      (catching-exceptions (#(throw (NullPointerException.))) (assoc-kind {} :something-bad-happened) NullPointerException)
+      (is (not "Should never get to this place!!"))
+      (catch ExceptionInfo ei
+        (let [info (.getData ei)]
+          (is (= (:kind info) :something-bad-happened))
+          (is (instance? NullPointerException (:exception info)))))))
+
+  (testing "Should throw original exception on an exception that is not listed"
+    (try
+      (catching-exceptions (#(throw (NullPointerException.))) (assoc-kind {} :something-bad-happened) ArithmeticException)
+      (is (not "Should never get to this place!!"))
+      (catch NullPointerException e
+        (is (instance? NullPointerException e))))))

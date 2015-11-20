@@ -128,8 +128,13 @@
     (let [query-info (-> (client-info client)
                          (assoc :endpoint path)
                          (assoc :params   params))
+          connection-error-structure (assoc-kind query-info :puppetdb-connection-error)
           response (-> (pdb-get client path params)
-                       (catching-exceptions (assoc-kind query-info :puppetdb-connection-error)))]
+                       (catching-exceptions connection-error-structure))]
+
+      (when-let [exception (:error response)]
+        (throw (ex-info nil (assoc connection-error-structure :exception exception))))
+
       (if-not (= 200 (:status response))
         (throw (ex-info nil (-> query-info
                                 (assoc-kind :puppetdb-query-error)
