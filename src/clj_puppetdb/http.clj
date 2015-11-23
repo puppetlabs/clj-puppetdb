@@ -62,8 +62,8 @@
 
 (defn make-client
   [http-async-client ^String host opts]
-  {:pre [(or (.startsWith host "https://")
-             (.startsWith host "http://"))]
+  {:pre  [(or (.startsWith host "https://")
+              (.startsWith host "http://"))]
    :post [(satisfies? PdbClient %)]}
   (let [vcr-dir (:vcr-dir opts)
         opts (dissoc opts :vcr-dir)
@@ -127,7 +127,7 @@
     {:pre [(satisfies? PdbClient client) (instance? String path) (map? params)]}
     (let [query-info (-> (client-info client)
                          (assoc :endpoint path)
-                         (assoc :params   params))
+                         (assoc :params params))
           connection-error-structure (assoc-kind query-info :puppetdb-connection-error)
           response (-> (pdb-get client path params)
                        (catching-exceptions connection-error-structure))]
@@ -139,7 +139,7 @@
         (throw (ex-info nil (-> query-info
                                 (assoc-kind :puppetdb-query-error)
                                 (assoc :status (:status response))
-                                (assoc :msg    (slurp (make-response-reader response)))))))
+                                (assoc :msg (slurp (make-response-reader response)))))))
       (let [data (-> response
                      make-response-reader
                      (decode-stream-catching-parse-exceptions query-info))
