@@ -13,7 +13,8 @@
                  [me.raynes/fs "1.4.5"]
                  [puppetlabs/http-client "0.4.5"]
                  [prismatic/schema "0.4.0"]
-                 [puppetlabs/kitchensink "1.0.0"]]
+                 [puppetlabs/kitchensink "1.0.0"]
+                 [slingshot "0.12.2"]]
   :plugins [[lein-release "1.0.5"]]
   :lein-release {:scm        :git
                  :deploy-via :lein-deploy}

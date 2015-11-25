@@ -9,7 +9,8 @@
             [puppetlabs.http.client.async :as http-async]
             [puppetlabs.http.client.common :as http-common]
             [puppetlabs.ssl-utils.core :as ssl]
-            [schema.core :as s])
+            [schema.core :as s]
+            [slingshot.slingshot :refer [throw+]])
   (:import [java.io IOException File]
            [javax.net.ssl SSLContext]
            [com.fasterxml.jackson.core JsonParseException]))
@@ -86,7 +87,7 @@
        ~call
        ~@(map (fn [exception]
                 `(catch ~exception exception#
-                   (throw (ex-info nil (assoc ~exception-structure :exception exception#)))))
+                   (throw+ (assoc ~exception-structure :exception exception#))))
               exceptions))))
 
 (defmacro catching-parse-exceptions
@@ -133,13 +134,13 @@
                        (catching-exceptions connection-error-structure))]
 
       (when-let [exception (:error response)]
-        (throw (ex-info nil (assoc connection-error-structure :exception exception))))
+        (throw+ (assoc connection-error-structure :exception exception)))
 
       (if-not (= 200 (:status response))
-        (throw (ex-info nil (-> query-info
+        (throw+ (-> query-info
                                 (assoc-kind :puppetdb-query-error)
                                 (assoc :status (:status response))
-                                (assoc :msg (slurp (make-response-reader response)))))))
+                                (assoc :msg (slurp (make-response-reader response))))))
       (let [data (-> response
                      make-response-reader
                      (decode-stream-catching-parse-exceptions query-info))
