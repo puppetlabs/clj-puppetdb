@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "file_format": "This MAINTAINERS file format is described at https://github.com/puppetlabs/maintainers",
+  "issues": "https://github.com/puppetlabs/clj-puppetdb/issues",
+  "people": [
+    {
+      "github": "dmcpl",
+      "email": "david.mccauley@puppet.com",
+      "name": "David McCauley"
+    },
+    {
+      "github": "kbrezina",
+      "email": "karel.brezina@puppet.com",
+      "name": "Karel Brezina"
+    }
+  ]
+}
